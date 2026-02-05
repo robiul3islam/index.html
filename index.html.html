@@ -2,89 +2,66 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>Inovera Creation - Ultimate Billing System</title>
+    <title>Inovera Creation - Billing System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #f28c28; --bg: #fffbf5; --red: #d32f2f; --green: #27ae60; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #e0e0e0; padding: 20px; }
-        .top-search-bar { max-width: 850px; margin: 0 auto 15px; background: #333; color: white; padding: 15px; border-radius: 8px; text-align: center; }
-        #main-search { width: 60%; padding: 10px; border-radius: 5px; border: none; }
-        .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .invoice-container { max-width: 800px; margin: auto; background: white; padding: 40px; min-height: 1050px; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.2); box-sizing: border-box; }
-        .page-break { page-break-before: always; margin-top: 50px; border-top: 2px dashed #ccc; padding-top: 20px; }
+        :root { --primary: #f28c28; --bg: #fffbf5; }
+        body { font-family: 'Segoe UI', Arial; background: #e0e0e0; padding: 20px; }
+        .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; }
+        .invoice-container { max-width: 800px; margin: auto; background: white; padding: 40px; min-height: 1000px; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #logo-preview { max-width: 150px; cursor: pointer; border: 1px dashed #ccc; }
+        #logo-preview { max-width: 150px; border: 1px dashed #ccc; cursor: pointer; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th, td { border: 1px solid var(--primary); padding: 8px; font-size: 14px; }
-        th { background: var(--bg); }
-        input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
-        #c-name { font-weight: bold; font-size: 1.1em; }
-        #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 800px; left: 600px; user-select: none; }
-        #seal-img { width: 100%; opacity: 0.8; }
-        .summary-title { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 15px; text-align: center; }
-        #search-results { position: absolute; width: 600px; background: white; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); left: 50%; transform: translateX(-50%); }
-        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; color: black; text-align: left; }
+        input, textarea { width: 100%; border: none; outline: none; background: transparent; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
-        @media print { .no-print, .top-search-bar, .controls { display: none !important; } .invoice-container { box-shadow: none; width: 100%; padding: 20px; } }
+        @media print { .no-print { display: none !important; } .invoice-container { box-shadow: none; width: 100%; } }
     </style>
 </head>
 <body>
 
-    <div class="top-search-bar no-print">
-        <input type="text" id="main-search" placeholder="Search by Client Name or Bill No..." onkeyup="globalSearch()">
-        <div id="search-results"></div>
-    </div>
-
     <div class="controls no-print">
-        <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Logo</button>
-        <button onclick="document.getElementById('seal-input').click()" style="background:#777;">Seal</button>
-        <button onclick="addRow()" style="background:var(--green);">+ Item</button>
-        <button onclick="saveInvoice()" style="background:#3498db;">Save Record (Cloud)</button>
+        <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Upload Logo</button>
+        <button onclick="addRow()" style="background:#27ae60;">+ Add Item</button>
+        <button onclick="saveInvoice()" id="save-btn" style="background:#3498db;">Save Online</button>
         <button onclick="exportPDF()" style="background:#9b59b6;">Download PDF</button>
-        <button onclick="location.reload()" style="background:var(--red);">Reset</button>
-        <input type="file" id="logo-input" accept="image/*" style="display:none">
-        <input type="file" id="seal-input" accept="image/*" style="display:none">
+        <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="previewImg(this)">
     </div>
 
     <div class="invoice-container" id="printable-area">
-        <div class="invoice-page">
-            <div class="header">
-                <h1 style="font-size: 40px; margin:0;">INVOICE</h1>
-                <img id="logo-preview" src="https://via.placeholder.com/150x50?text=Logo">
-            </div>
-            <div id="seal-container"><img id="seal-img" src="https://via.placeholder.com/120x120?text=Digital+Seal"></div>
-            
-            <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 20px; border-top: 3px solid var(--primary);">
-                <div><strong>Inv No:</strong> <input type="text" id="inv-no" value="IC-2026-001" style="width:100px;"></div>
-                <div><strong>Status:</strong> <select id="bill-status"><option value="Unpaid">Unpaid</option><option value="Paid">Paid</option></select></div>
-                <div><strong>Date:</strong> <input type="text" id="inv-date"></div>
-            </div>
+        <div class="header">
+            <h1 style="font-size: 40px; margin:0; color: var(--primary);">INVOICE</h1>
+            <img id="logo-preview" src="https://via.placeholder.com/150x50?text=Logo+Upload">
+        </div>
 
+        <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 20px;">
+            <div><strong>Inv No:</strong> <input type="text" id="inv-no" value="IC-2026-001"></div>
+            <div><strong>Date:</strong> <input type="text" id="inv-date"></div>
+        </div>
+
+        <table>
+            <tr><td width="20%"><strong>Client Name:</strong></td><td><input type="text" id="c-name" placeholder="Name"></td></tr>
+        </table>
+
+        <table id="item-table">
+            <thead>
+                <tr><th width="5%">SL</th><th>Description</th><th width="10%">Qty</th><th width="15%">Price</th><th width="15%">Total</th></tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+
+        <div style="margin-left: auto; width: 40%;">
             <table>
-                <tr><td><strong>Company:</strong></td><td><input type="text" id="c-company" placeholder="Client's Company"></td><td align="center"><strong>Prep. by:</strong></td><td><input type="text" id="prep-by" value="Inovera Creation"></td></tr>
-                <tr><td><strong>Name:</strong></td><td><input type="text" id="c-name" placeholder="Client Name" oninput="showSummary(this.value)"></td><td align="center"><strong>Prep. for:</strong></td><td><input type="text" id="prep-for"></td></tr>
-                <tr><td><strong>Address:</strong></td><td><input type="text" id="c-address"></td><td><strong>Contact:</strong></td><td><input type="text" id="c-contact"></td></tr>
+                <tr><td align="right">Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
+                <tr><td align="right">Advance:</td><td><input type="number" id="advance" value="0" oninput="calculate()"></td></tr>
+                <tr style="background:var(--bg);"><strong><td align="right">Due:</td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></strong></tr>
             </table>
-
-            <table id="item-table">
-                <thead><tr><th width="5%">SL</th><th width="55%">Description</th><th width="10%">Qty</th><th width="15%">Price</th><th width="15%">Total</th></tr></thead>
-                <tbody id="tbody"></tbody>
-            </table>
-
-            <div style="margin-left: auto; width: 40%;">
-                <table>
-                    <tr><td align="right">Sub Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
-                    <tr><td align="right">Advance:</td><td><input type="number" id="advance" value="0" oninput="calculate()"></td></tr>
-                    <tr style="background:var(--bg);"><td align="right"><strong>Due:</strong></td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></tr>
-                </table>
-            </div>
-            <p><strong>In Words:</strong> <span id="words-area"></span></p>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD564XNDplN4_1YACVsGSPejchc3XMIB20",
@@ -116,40 +93,44 @@
                 total: document.getElementById('sub-total').value,
                 adv: document.getElementById('advance').value,
                 date: document.getElementById('inv-date').value,
-                items: items
+                items: items,
+                logo: document.getElementById('logo-preview').src
             };
 
             set(ref(db, 'invoices/' + data.invNo.replace(/\W/g, '_')), data)
-                .then(() => alert("Data Saved Online!"))
-                .catch((error) => alert("Error: " + error.message));
+                .then(() => alert("Saved Online!"))
+                .catch((e) => alert("Error: " + e.message));
         };
     </script>
 
     <script>
         document.getElementById('inv-date').value = new Date().toLocaleDateString('en-GB');
 
-        function addRow(d='', q='', p='', t='') {
+        function previewImg(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => document.getElementById('logo-preview').src = e.target.result;
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function addRow() {
             const tbody = document.getElementById('tbody');
             const row = tbody.insertRow();
             row.innerHTML = `
                 <td align="center">${tbody.rows.length}</td>
-                <td><textarea class="item-desc">${d}</textarea></td>
-                <td><input type="number" class="qty" value="${q}" oninput="updateRow(this)"></td>
-                <td><input type="number" class="price" value="${p}" oninput="updateRow(this)"></td>
-                <td><input type="number" class="row-total" value="${t}" oninput="calculate()"></td>
+                <td><textarea class="item-desc"></textarea></td>
+                <td><input type="number" class="qty" oninput="updateRow(this)"></td>
+                <td><input type="number" class="price" oninput="updateRow(this)"></td>
+                <td><input type="number" class="row-total" oninput="calculate()"></td>
             `;
-            calculate();
         }
 
         function updateRow(el) {
             const row = el.closest('tr');
             const q = parseFloat(row.querySelector('.qty').value) || 0;
             const p = parseFloat(row.querySelector('.price').value) || 0;
-            const totalField = row.querySelector('.row-total');
-            // যদি Qty এবং Price থাকে তবেই অটো গুণ হবে, নয়তো ম্যানুয়ালি লেখা যাবে
-            if (q > 0 || p > 0) {
-                totalField.value = (q * p).toFixed(2);
-            }
+            if (q > 0 || p > 0) row.querySelector('.row-total').value = (q * p).toFixed(2);
             calculate();
         }
 
@@ -159,26 +140,11 @@
             const adv = parseFloat(document.getElementById('advance').value) || 0;
             document.getElementById('sub-total').value = total.toFixed(2);
             document.getElementById('due').value = (total - adv).toFixed(2);
-            document.getElementById('words-area').innerText = numberToWords(Math.floor(total)) + " Taka Only";
-        }
-
-        function numberToWords(num) {
-            const a = ['','one ','two ','three ','four ','five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
-            const b = ['', '', 'twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
-            let n = ('000000000' + Math.floor(num)).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-            if (!n) return ''; 
-            let str = '';
-            str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
-            str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
-            str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
-            str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
-            str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-            return str;
         }
 
         function exportPDF() {
             const element = document.getElementById('printable-area');
-            html2pdf().from(element).save('Invoice.pdf');
+            html2pdf().from(element).save('Invoice_' + document.getElementById('inv-no').value + '.pdf');
         }
 
         window.onload = () => addRow();
