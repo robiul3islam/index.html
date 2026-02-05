@@ -2,59 +2,77 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>Inovera Creation - Billing System</title>
+    <title>Inovera Creation - Ultimate Billing System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #f28c28; --bg: #fffbf5; }
-        body { font-family: 'Segoe UI', Arial; background: #e0e0e0; padding: 20px; }
-        .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; }
-        .invoice-container { max-width: 800px; margin: auto; background: white; padding: 40px; min-height: 1000px; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        :root { --primary: #f28c28; --bg: #fffbf5; --red: #d32f2f; --green: #27ae60; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #e0e0e0; padding: 20px; }
+        .top-search-bar { max-width: 850px; margin: 0 auto 15px; background: #333; color: white; padding: 15px; border-radius: 8px; text-align: center; }
+        #main-search { width: 60%; padding: 10px; border-radius: 5px; border: none; }
+        .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .invoice-container { max-width: 800px; margin: auto; background: white; padding: 40px; min-height: 1050px; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.2); box-sizing: border-box; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #logo-preview { max-width: 150px; border: 1px dashed #ccc; cursor: pointer; }
+        #logo-preview { max-width: 150px; cursor: pointer; border: 1px dashed #ccc; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th, td { border: 1px solid var(--primary); padding: 8px; font-size: 14px; }
-        input, textarea { width: 100%; border: none; outline: none; background: transparent; }
-        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
-        @media print { .no-print { display: none !important; } .invoice-container { box-shadow: none; width: 100%; } }
+        th { background: var(--bg); }
+        input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
+        #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 800px; left: 600px; user-select: none; }
+        #seal-img { width: 100%; opacity: 0.8; }
+        @media print { .no-print, .top-search-bar, .controls { display: none !important; } .invoice-container { box-shadow: none; width: 100%; padding: 20px; } }
     </style>
 </head>
 <body>
 
+    <div class="top-search-bar no-print">
+        <input type="text" id="main-search" placeholder="Search by Client Name or Bill No..." onkeyup="globalSearch()">
+        <div id="search-results"></div>
+    </div>
+
     <div class="controls no-print">
-        <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Upload Logo</button>
-        <button onclick="addRow()" style="background:#27ae60;">+ Add Item</button>
-        <button onclick="saveInvoice()" id="save-btn" style="background:#3498db;">Save Online</button>
+        <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Logo</button>
+        <button onclick="document.getElementById('seal-input').click()" style="background:#777;">Seal</button>
+        <button onclick="addRow()" style="background:var(--green);">+ Item</button>
+        <button onclick="saveInvoice()" style="background:#3498db;">Save (Online)</button>
         <button onclick="exportPDF()" style="background:#9b59b6;">Download PDF</button>
-        <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="previewImg(this)">
+        <button onclick="location.reload()" style="background:var(--red);">Reset</button>
+        <input type="file" id="logo-input" accept="image/*" style="display:none">
+        <input type="file" id="seal-input" accept="image/*" style="display:none">
     </div>
 
     <div class="invoice-container" id="printable-area">
         <div class="header">
-            <h1 style="font-size: 40px; margin:0; color: var(--primary);">INVOICE</h1>
-            <img id="logo-preview" src="https://via.placeholder.com/150x50?text=Logo+Upload">
+            <h1 style="font-size: 40px; margin:0;">INVOICE</h1>
+            <img id="logo-preview" src="https://via.placeholder.com/150x50?text=Logo">
         </div>
 
-        <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 20px;">
-            <div><strong>Inv No:</strong> <input type="text" id="inv-no" value="IC-2026-001"></div>
+        <div id="seal-container">
+            <img id="seal-img" src="https://via.placeholder.com/120x120?text=Digital+Seal">
+            <div style="font-size: 9px; color: #999; text-align: center;" class="no-print">Drag to Position</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 20px; border-top: 3px solid var(--primary);">
+            <div><strong>Inv No:</strong> <input type="text" id="inv-no" value="IC-2026-001" style="width:100px;"></div>
             <div><strong>Date:</strong> <input type="text" id="inv-date"></div>
         </div>
 
         <table>
-            <tr><td width="20%"><strong>Client Name:</strong></td><td><input type="text" id="c-name" placeholder="Name"></td></tr>
+            <tr><td><strong>Company:</strong></td><td><input type="text" id="c-company" placeholder="Client's Company"></td></tr>
+            <tr><td><strong>Name:</strong></td><td><input type="text" id="c-name" placeholder="Client Name"></td></tr>
         </table>
 
         <table id="item-table">
             <thead>
-                <tr><th width="5%">SL</th><th>Description</th><th width="10%">Qty</th><th width="15%">Price</th><th width="15%">Total</th></tr>
+                <tr><th width="5%">SL</th><th width="55%">Description</th><th width="10%">Qty</th><th width="15%">Price</th><th width="15%">Total</th></tr>
             </thead>
             <tbody id="tbody"></tbody>
         </table>
 
         <div style="margin-left: auto; width: 40%;">
             <table>
-                <tr><td align="right">Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
+                <tr><td align="right">Sub Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
                 <tr><td align="right">Advance:</td><td><input type="number" id="advance" value="0" oninput="calculate()"></td></tr>
-                <tr style="background:var(--bg);"><strong><td align="right">Due:</td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></strong></tr>
+                <tr style="background:var(--bg);"><td align="right"><strong>Due:</strong></td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></tr>
             </table>
         </div>
     </div>
@@ -93,26 +111,17 @@
                 total: document.getElementById('sub-total').value,
                 adv: document.getElementById('advance').value,
                 date: document.getElementById('inv-date').value,
-                items: items,
-                logo: document.getElementById('logo-preview').src
+                items: items
             };
 
             set(ref(db, 'invoices/' + data.invNo.replace(/\W/g, '_')), data)
-                .then(() => alert("Saved Online!"))
-                .catch((e) => alert("Error: " + e.message));
+                .then(() => alert("অনলাইনে সফলভাবে সেভ হয়েছে!"))
+                .catch((error) => alert("ভুল হয়েছে: " + error.message));
         };
     </script>
 
     <script>
         document.getElementById('inv-date').value = new Date().toLocaleDateString('en-GB');
-
-        function previewImg(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => document.getElementById('logo-preview').src = e.target.result;
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
 
         function addRow() {
             const tbody = document.getElementById('tbody');
@@ -130,7 +139,10 @@
             const row = el.closest('tr');
             const q = parseFloat(row.querySelector('.qty').value) || 0;
             const p = parseFloat(row.querySelector('.price').value) || 0;
-            if (q > 0 || p > 0) row.querySelector('.row-total').value = (q * p).toFixed(2);
+            // Qty বা Price থাকলে অটো গুন হবে, নয়তো সরাসরি লেখা যাবে
+            if (q > 0 || p > 0) {
+                row.querySelector('.row-total').value = (q * p).toFixed(2);
+            }
             calculate();
         }
 
@@ -144,8 +156,20 @@
 
         function exportPDF() {
             const element = document.getElementById('printable-area');
-            html2pdf().from(element).save('Invoice_' + document.getElementById('inv-no').value + '.pdf');
+            html2pdf().from(element).save('Invoice.pdf');
         }
+
+        // Seal Dragging logic
+        const seal = document.getElementById("seal-container");
+        let isDragging = false;
+        seal.onmousedown = () => isDragging = true;
+        document.onmousemove = (e) => {
+            if(isDragging) {
+                seal.style.left = (e.pageX - 60) + "px";
+                seal.style.top = (e.pageY - 60) + "px";
+            }
+        };
+        document.onmouseup = () => isDragging = false;
 
         window.onload = () => addRow();
     </script>
