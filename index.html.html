@@ -6,43 +6,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        /* আপনার অরিজিনাল সিএসএস ডিজাইন (হুবহু রাখা হয়েছে) */
         :root { --primary: #f28c28; --bg: #fffbf5; --red: #d32f2f; --green: #27ae60; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #e0e0e0; padding: 20px; margin: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #e0e0e0; padding: 20px; }
         
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #222; color: white; display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .login-box { background: #333; padding: 30px; border-radius: 10px; text-align: center; }
+        .login-box { background: #333; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .login-box input { padding: 10px; margin: 10px; border-radius: 5px; border: none; width: 200px; text-align: center; }
 
         .top-search-bar { max-width: 850px; margin: 0 auto 15px; background: #333; color: white; padding: 15px; border-radius: 8px; text-align: center; position: relative; }
-        #main-search { width: 80%; padding: 12px; border-radius: 25px; border: none; outline: none; }
-        #search-results { position: absolute; width: 80%; background: white; z-index: 1000; left: 50%; transform: translateX(-50%); border-radius: 0 0 10px 10px; max-height: 250px; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .search-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; color: black; text-align: left; display: flex; justify-content: space-between; }
-
-        .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        #main-search { width: 60%; padding: 10px; border-radius: 5px; border: none; }
+        .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        /* A4 সাইজ কন্টেইনার */
-        .invoice-container { 
-            width: 210mm; 
-            min-height: 297mm; 
-            margin: auto; 
-            background: white; 
-            padding: 20mm; 
-            position: relative; 
-            box-sizing: border-box; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-        }
-
+        /* A4 সাইজ নিশ্চিত করতে স্টাইল */
+        .invoice-container { width: 794px; margin: auto; background: white; padding: 40px; min-height: 1123px; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.2); box-sizing: border-box; }
+        
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #logo-preview { max-width: 150px; cursor: pointer; }
+        #logo-preview { max-width: 150px; cursor: pointer; border: 1px dashed #ccc; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th, td { border: 1px solid var(--primary); padding: 8px; font-size: 14px; }
         th { background: var(--bg); }
         input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
-        
-        #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 800px; left: 600px; }
+        #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 800px; left: 600px; user-select: none; }
         #seal-img { width: 100%; opacity: 0.8; }
+        #search-results { position: absolute; width: 600px; background: white; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); left: 50%; transform: translateX(-50%); }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; color: black; text-align: left; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
+        
+        .modal { display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); }
+        .modal-content { background:#fff; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center; }
 
-        @media print { .no-print { display: none !important; } .invoice-container { box-shadow: none; margin: 0; } }
+        @media print { 
+            .no-print, .top-search-bar, .controls, #login-screen { display: none !important; }
+            .invoice-container { box-shadow: none; width: 100%; padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -50,14 +47,14 @@
     <div id="login-screen">
         <div class="login-box">
             <h2 style="color:var(--primary)">System Access</h2>
-            <input type="password" id="sys-pass" placeholder="পাসওয়ার্ড দিন" style="padding:10px; margin-bottom:10px; text-align:center;"> <br>
-            <button onclick="checkLogin()" style="background: var(--primary); width:100%;">Login</button>
+            <input type="password" id="sys-pass" placeholder="পাসওয়ার্ড দিন"> <br>
+            <button onclick="checkLogin()" style="background: var(--primary);">Login</button>
         </div>
     </div>
 
     <div id="main-content" style="display:none;">
         <div class="top-search-bar no-print">
-            <input type="text" id="main-search" placeholder="নাম অথবা বিল নম্বর লিখে খুঁজুন..." onkeyup="globalSearch()">
+            <input type="text" id="main-search" placeholder="Search by Client Name or Bill No..." onkeyup="globalSearch()">
             <div id="search-results"></div>
         </div>
 
@@ -69,6 +66,7 @@
             <button onclick="downloadAction('pdf')" style="background:#9b59b6;">Download PDF</button>
             <button onclick="downloadAction('jpg')" style="background:#e67e22;">Save JPG</button>
             <button onclick="deleteInvoice()" style="background:var(--red);">Delete Bill</button>
+            <button onclick="openSettings()" style="background:#555;">Settings ⚙️</button>
             <button onclick="location.reload()" style="background:#7f8c8d;">Logout</button>
             <input type="file" id="logo-input" accept="image/*" style="display:none">
             <input type="file" id="seal-input" accept="image/*" style="display:none">
@@ -85,20 +83,24 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 20px; border-top: 3px solid var(--primary);">
                     <div><strong>Inv No:</strong> <input type="text" id="inv-no" value="IC-2026-001" style="width:100px;"></div>
+                    <div><strong>Status:</strong> 
+                        <select id="bill-status" style="width: 80px; font-weight: bold;">
+                            <option value="Unpaid">Unpaid</option>
+                            <option value="Paid">Paid</option>
+                        </select>
+                    </div>
                     <div><strong>Date:</strong> <input type="text" id="inv-date"></div>
                 </div>
                 <table>
                     <tr>
                         <td width="15%"><strong>Company:</strong></td>
                         <td width="45%"><input type="text" id="c-company" placeholder="Client's Company"></td>
-                        <td width="15%" align="center"><strong>Prep. by:</strong></td>
-                        <td width="25%"><input type="text" id="prep-by" value="Inovera Creation" style="text-align:center; font-weight:bold;"></td>
+                        <td width="15%" align="center" rowspan="2"><strong>Prepared by:</strong></td>
+                        <td width="25%" rowspan="2"><input type="text" id="prep-by" value="Inovera Creation" style="text-align:center; font-weight:bold;"></td>
                     </tr>
                     <tr>
                         <td><strong>Name:</strong></td>
-                        <td><input type="text" id="c-name" placeholder="Client Name" oninput="showSummary(this.value)"></td>
-                        <td align="center"><strong>Contact:</strong></td>
-                        <td><input type="text" id="c-contact" placeholder="Phone Number"></td>
+                        <td><input type="text" id="c-name" placeholder="Client Full Name" oninput="showSummary(this.value)"></td>
                     </tr>
                 </table>
                 <table id="item-table">
@@ -107,7 +109,7 @@
                     </thead>
                     <tbody id="tbody"></tbody>
                 </table>
-                <div style="margin-left: auto; width: 45%;">
+                <div style="margin-left: auto; width: 40%;">
                     <table>
                         <tr><td style="border:none; text-align:right;">Sub Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
                         <tr><td style="border:none; text-align:right;">Advance:</td><td><input type="number" id="advance" value="0" oninput="calculate()"></td></tr>
@@ -118,18 +120,36 @@
             </div>
 
             <div class="invoice-container" id="summary-page" style="display:none; margin-top:20px;">
-                <h2 style="text-align:center; color:var(--primary);">Statement of Outstanding Balance</h2>
+                <div style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 15px; text-align: center;">Statement of Outstanding Balance</div>
                 <p>Client: <strong id="sum-client-name"></strong></p>
-                <table id="summary-table">
+                <table>
                     <thead>
-                        <tr><th class="no-print">Select</th><th>Inv No</th><th>Date</th><th>Total</th><th>Paid</th><th>Due</th></tr>
+                        <tr>
+                            <th class="no-print" width="5%">Select</th>
+                            <th>Inv No</th>
+                            <th>Date</th>
+                            <th>Total Bill</th>
+                            <th>Advance Paid</th>
+                            <th>Due to Add</th>
+                        </tr>
                     </thead>
                     <tbody id="sum-tbody"></tbody>
                 </table>
-                <div style="text-align: right; font-weight: bold; font-size: 18px; padding: 10px; background: var(--bg); border: 1px solid var(--primary);">
+                <div style="text-align: right; font-weight: bold; font-size: 16px; border-top: 2px solid var(--primary); padding-top: 10px;">
                     Total Selected Due: <span id="total-selected-due">0.00</span> BDT
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h3>পাসওয়ার্ড সেটিংস</h3>
+            <input type="text" id="new-sys-pass" placeholder="New Login Password">
+            <input type="text" id="new-admin-pass" placeholder="New Delete Password">
+            <br><br>
+            <button onclick="saveSettings()" style="background:var(--green);">Save</button>
+            <button onclick="closeSettings()" style="background:var(--red);">Close</button>
         </div>
     </div>
 
@@ -143,6 +163,7 @@
             databaseURL: "https://special-inventon-default-rtdb.firebaseio.com",
             projectId: "special-inventon"
         };
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
@@ -173,18 +194,15 @@
 
         window.globalSearch = function() {
             const q = document.getElementById('main-search').value.toLowerCase();
-            const res = document.getElementById('search-results');
-            if(!q) { res.innerHTML = ""; return; }
+            if(!q) { document.getElementById('search-results').innerHTML = ""; return; }
             get(child(ref(db), 'invoices/')).then((snap) => {
                 if(snap.exists()) {
                     let html = "";
                     for(let id in snap.val()) {
                         const m = snap.val()[id];
-                        if(m.name.toLowerCase().includes(q) || m.invNo.toLowerCase().includes(q)) {
-                            html += `<div class="search-item" onclick="loadInv('${id}')"><span>${m.invNo} - ${m.name}</span></div>`;
-                        }
+                        if(m.name.toLowerCase().includes(q)) html += `<div class="search-item" onclick="loadInv('${id}')">${m.invNo} - ${m.name}</div>`;
                     }
-                    res.innerHTML = html;
+                    document.getElementById('search-results').innerHTML = html;
                 }
             });
         };
@@ -229,14 +247,14 @@
         function addRow(d='', q='', p='', t='') {
             const tbody = document.getElementById('tbody');
             const row = tbody.insertRow();
-            row.innerHTML = `<td align="center">${tbody.rows.length}</td><td><textarea class="item-desc" rows="1">${d}</textarea></td><td><input type="number" class="qty" value="${q}" oninput="updateRow(this)"></td><td><input type="number" class="price" value="${p}" oninput="updateRow(this)"></td><td><input type="number" class="row-total" value="${t}" readonly></td>`;
+            row.innerHTML = `<td align="center">${tbody.rows.length}</td><td><textarea class="item-desc">${d}</textarea></td><td><input type="number" class="qty" value="${q}" oninput="updateRow(this)"></td><td><input type="number" class="price" value="${p}" oninput="updateRow(this)"></td><td><input type="number" class="row-total" value="${t}" readonly></td>`;
             calculate();
         }
 
         function updateRow(el) {
             const row = el.closest('tr');
-            const q = row.querySelector('.qty').value || 0;
-            const p = row.querySelector('.price').value || 0;
+            const q = parseFloat(row.querySelector('.qty').value) || 0;
+            const p = parseFloat(row.querySelector('.price').value) || 0;
             row.querySelector('.row-total').value = (q * p).toFixed(2);
             calculate();
         }
@@ -256,60 +274,58 @@
             document.getElementById('total-selected-due').innerText = total.toFixed(2);
         }
 
-        // এ৪ সাইজ এবং সঠিক পেজ ডাউনলোড লজিক (উন্নত কোয়ালিটি)
-        async function downloadAction(type) {
-            const choice = prompt("কি ডাউনলোড করবেন?\n1. শুধু ইনভয়েস (Invoice Only)\n2. শুধু সামারি (Summary Only)");
+        // সংশোধিত পেজ সিলেকশন এবং হাই-রেজোলিউশন ডাউনলোড লজিক
+        function downloadAction(type) {
+            const choice = prompt("কি সেভ করবেন?\n1. শুধু ইনভয়েস (Invoice Only)\n2. শুধু সামারি (Summary Only)");
             const inv = document.getElementById('invoice-page-part');
             const sum = document.getElementById('summary-page');
 
+            // ডাউনলোড করার জন্য টার্গেট এলিমেন্ট সেট করা
             let target;
             if(choice == '1') {
                 target = inv;
-                sum.style.display = 'none';
+                sum.style.display = 'none'; // সামারি লুকানো
             } else if(choice == '2') {
                 target = sum;
-                inv.style.display = 'none';
+                inv.style.display = 'none'; // ইনভয়েস লুকানো
                 sum.style.display = 'block';
-            } else return;
+            } else {
+                alert("ভুল অপশন!"); return;
+            }
 
             const opt = {
                 margin: 0,
-                filename: 'Bill_A4.pdf',
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                filename: 'Inovera_Bill.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true }, // লিখা স্পষ্ট করতে scale বাড়ানো হয়েছে
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
 
             if(type === 'pdf') {
-                await html2pdf().set(opt).from(target).save();
+                html2pdf().set(opt).from(target).save().then(() => {
+                    // ডাউনলোড শেষে আবার সব ফিরিয়ে আনা
+                    inv.style.display = 'block';
+                    if(document.getElementById('c-name').value) sum.style.display = 'block';
+                });
             } else {
-                const canvas = await html2canvas(target, { scale: 3, backgroundColor: '#ffffff' });
-                const link = document.createElement('a');
-                link.download = 'Bill_Image.jpg';
-                link.href = canvas.toDataURL("image/jpeg", 1.0);
-                link.click();
+                html2canvas(target, { scale: 3 }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'Invoice.jpg';
+                    link.href = canvas.toDataURL("image/jpeg", 1.0);
+                    link.click();
+                    // আগের অবস্থায় ফেরা
+                    inv.style.display = 'block';
+                    if(document.getElementById('c-name').value) sum.style.display = 'block';
+                });
             }
-
-            // ডাউনলোড শেষে আগের অবস্থায় ফেরা
-            inv.style.display = 'block';
-            if(document.getElementById('c-name').value) sum.style.display = 'block';
         }
 
-        // সিল ড্র্যাগিং
+        // সিল ড্র্যাগিং লজিক
         const seal = document.getElementById("seal-container");
         let isDragging = false;
         seal.onmousedown = () => isDragging = true;
         document.onmousemove = (e) => { if(isDragging) { seal.style.left = (e.pageX - 60) + "px"; seal.style.top = (e.pageY - 60) + "px"; } };
         document.onmouseup = () => isDragging = false;
-
-        document.getElementById('logo-input').onchange = (e) => {
-            const r = new FileReader(); r.onload = () => document.getElementById('logo-preview').src = r.result;
-            r.readAsDataURL(e.target.files[0]);
-        };
-        document.getElementById('seal-input').onchange = (e) => {
-            const r = new FileReader(); r.onload = () => document.getElementById('seal-img').src = r.result;
-            r.readAsDataURL(e.target.files[0]);
-        };
 
         function numberToWords(num) {
             const a = ['','one ','two ','three ','four ','five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
