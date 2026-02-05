@@ -5,6 +5,7 @@
     <title>Inovera Creation - Ultimate Billing System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* আপনার অরিজিনাল সিএসএস */
         :root { --primary: #f28c28; --bg: #fffbf5; --red: #d32f2f; --green: #27ae60; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #e0e0e0; padding: 20px; }
         .top-search-bar { max-width: 850px; margin: 0 auto 15px; background: #333; color: white; padding: 15px; border-radius: 8px; text-align: center; }
@@ -19,6 +20,9 @@
         input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
         #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 800px; left: 600px; user-select: none; }
         #seal-img { width: 100%; opacity: 0.8; }
+        #search-results { position: absolute; width: 600px; background: white; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); left: 50%; transform: translateX(-50%); }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; color: black; text-align: left; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
         @media print { .no-print, .top-search-bar, .controls { display: none !important; } .invoice-container { box-shadow: none; width: 100%; padding: 20px; } }
     </style>
 </head>
@@ -33,7 +37,7 @@
         <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Logo</button>
         <button onclick="document.getElementById('seal-input').click()" style="background:#777;">Seal</button>
         <button onclick="addRow()" style="background:var(--green);">+ Item</button>
-        <button onclick="saveInvoice()" style="background:#3498db;">Save (Online)</button>
+        <button onclick="saveInvoice()" id="save-btn" style="background:#3498db;">Save Record (Cloud)</button>
         <button onclick="exportPDF()" style="background:#9b59b6;">Download PDF</button>
         <button onclick="location.reload()" style="background:var(--red);">Reset</button>
         <input type="file" id="logo-input" accept="image/*" style="display:none">
@@ -59,6 +63,7 @@
         <table>
             <tr><td><strong>Company:</strong></td><td><input type="text" id="c-company" placeholder="Client's Company"></td></tr>
             <tr><td><strong>Name:</strong></td><td><input type="text" id="c-name" placeholder="Client Name"></td></tr>
+            <tr><td><strong>Contact:</strong></td><td><input type="text" id="c-contact" placeholder="Phone Number"></td></tr>
         </table>
 
         <table id="item-table">
@@ -75,11 +80,12 @@
                 <tr style="background:var(--bg);"><td align="right"><strong>Due:</strong></td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></tr>
             </table>
         </div>
+        <p><strong>In Words:</strong> <span id="words-area"></span></p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD564XNDplN4_1YACVsGSPejchc3XMIB20",
@@ -94,7 +100,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // ক্লাউডে সেভ করার ফাংশন
         window.saveInvoice = function() {
+            const btn = document.getElementById('save-btn');
+            btn.innerText = "Saving...";
+            
             const items = [];
             document.querySelectorAll('#tbody tr').forEach(r => {
                 items.push({
@@ -108,41 +118,88 @@
             const data = {
                 invNo: document.getElementById('inv-no').value,
                 name: document.getElementById('c-name').value,
+                company: document.getElementById('c-company').value,
+                contact: document.getElementById('c-contact').value,
                 total: document.getElementById('sub-total').value,
                 adv: document.getElementById('advance').value,
                 date: document.getElementById('inv-date').value,
-                items: items
+                items: items,
+                logo: document.getElementById('logo-preview').src,
+                seal: document.getElementById('seal-img').src
             };
 
             set(ref(db, 'invoices/' + data.invNo.replace(/\W/g, '_')), data)
-                .then(() => alert("অনলাইনে সফলভাবে সেভ হয়েছে!"))
-                .catch((error) => alert("ভুল হয়েছে: " + error.message));
+                .then(() => {
+                    alert("Data Saved Online Successfully!");
+                    btn.innerText = "Save Record (Cloud)";
+                })
+                .catch((error) => alert("Error: " + error.message));
+        };
+
+        // সার্চ ফাংশন (অনলাইন থেকে ডাটা খুঁজবে)
+        window.globalSearch = function() {
+            const q = document.getElementById('main-search').value.toLowerCase();
+            const res = document.getElementById('search-results');
+            if(!q) { res.innerHTML = ""; return; }
+
+            get(child(ref(db), 'invoices/')).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const allData = snapshot.val();
+                    let html = "";
+                    for(let id in allData) {
+                        const item = allData[id];
+                        if(item.name.toLowerCase().includes(q) || item.invNo.toLowerCase().includes(q)) {
+                            html += `<div class="search-item" onclick="loadInv('${id}')">${item.invNo} - ${item.name}</div>`;
+                        }
+                    }
+                    res.innerHTML = html;
+                }
+            });
+        };
+
+        // ডাটা লোড করার ফাংশন
+        window.loadInv = function(id) {
+            get(child(ref(db), 'invoices/' + id)).then((snapshot) => {
+                const d = snapshot.val();
+                document.getElementById('inv-no').value = d.invNo;
+                document.getElementById('c-name').value = d.name;
+                document.getElementById('c-company').value = d.company || '';
+                document.getElementById('c-contact').value = d.contact || '';
+                document.getElementById('advance').value = d.adv;
+                document.getElementById('inv-date').value = d.date;
+                document.getElementById('logo-preview').src = d.logo || '';
+                document.getElementById('seal-img').src = d.seal || '';
+                
+                const tb = document.getElementById('tbody');
+                tb.innerHTML = "";
+                d.items.forEach(i => addRow(i.d, i.q, i.p, i.t));
+                document.getElementById('search-results').innerHTML = "";
+            });
         };
     </script>
 
     <script>
+        // আপনার অরিজিনাল বাকি সব ফাংশনালিটি
         document.getElementById('inv-date').value = new Date().toLocaleDateString('en-GB');
 
-        function addRow() {
+        function addRow(d='', q='', p='', t='') {
             const tbody = document.getElementById('tbody');
             const row = tbody.insertRow();
             row.innerHTML = `
                 <td align="center">${tbody.rows.length}</td>
-                <td><textarea class="item-desc"></textarea></td>
-                <td><input type="number" class="qty" oninput="updateRow(this)"></td>
-                <td><input type="number" class="price" oninput="updateRow(this)"></td>
-                <td><input type="number" class="row-total" oninput="calculate()"></td>
+                <td><textarea class="item-desc">${d}</textarea></td>
+                <td><input type="number" class="qty" value="${q}" oninput="updateRow(this)"></td>
+                <td><input type="number" class="price" value="${p}" oninput="updateRow(this)"></td>
+                <td><input type="number" class="row-total" value="${t}" oninput="calculate()"></td>
             `;
+            calculate();
         }
 
         function updateRow(el) {
             const row = el.closest('tr');
             const q = parseFloat(row.querySelector('.qty').value) || 0;
             const p = parseFloat(row.querySelector('.price').value) || 0;
-            // Qty বা Price থাকলে অটো গুন হবে, নয়তো সরাসরি লেখা যাবে
-            if (q > 0 || p > 0) {
-                row.querySelector('.row-total').value = (q * p).toFixed(2);
-            }
+            if (q > 0 || p > 0) row.querySelector('.row-total').value = (q * p).toFixed(2);
             calculate();
         }
 
@@ -152,14 +209,25 @@
             const adv = parseFloat(document.getElementById('advance').value) || 0;
             document.getElementById('sub-total').value = total.toFixed(2);
             document.getElementById('due').value = (total - adv).toFixed(2);
+            document.getElementById('words-area').innerText = numberToWords(Math.floor(total)) + " Taka Only";
         }
 
         function exportPDF() {
             const element = document.getElementById('printable-area');
-            html2pdf().from(element).save('Invoice.pdf');
+            html2pdf().set({ margin: 0, filename: 'Invoice.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4' } }).from(element).save();
         }
 
-        // Seal Dragging logic
+        // লোগো ও সিল ইমেজ হ্যান্ডলিং
+        document.getElementById('logo-input').onchange = (e) => {
+            const r = new FileReader(); r.onload = () => document.getElementById('logo-preview').src = r.result;
+            r.readAsDataURL(e.target.files[0]);
+        };
+        document.getElementById('seal-input').onchange = (e) => {
+            const r = new FileReader(); r.onload = () => document.getElementById('seal-img').src = r.result;
+            r.readAsDataURL(e.target.files[0]);
+        };
+
+        // সিল ড্র্যাগিং
         const seal = document.getElementById("seal-container");
         let isDragging = false;
         seal.onmousedown = () => isDragging = true;
@@ -170,6 +238,20 @@
             }
         };
         document.onmouseup = () => isDragging = false;
+
+        function numberToWords(num) {
+            const a = ['','one ','two ','three ','four ','five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
+            const b = ['', '', 'twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+            let n = ('000000000' + Math.floor(num)).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+            if (!n) return ''; 
+            let str = '';
+            str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
+            str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
+            str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
+            str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
+            str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+            return str;
+        }
 
         window.onload = () => addRow();
     </script>
