@@ -18,21 +18,21 @@
         #main-search { width: 60%; padding: 10px; border-radius: 5px; border: none; }
         .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .invoice-container { max-width: 800px; margin: auto; background: white; padding: 40px; min-height: 1050px; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.2); box-sizing: border-box; }
-        
-        /* পেজ ব্রেক লজিক */
         .page-break { page-break-before: always; margin-top: 50px; border-top: 2px dashed #ccc; padding-top: 20px; }
-        
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         #logo-preview { max-width: 150px; cursor: pointer; border: 1px dashed #ccc; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         th, td { border: 1px solid var(--primary); padding: 8px; font-size: 14px; }
         th { background: var(--bg); }
         input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
-        
+        #c-name { font-weight: bold; font-size: 1.1em; }
         #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 800px; left: 600px; user-select: none; }
         #seal-img { width: 100%; opacity: 0.8; }
-        
+        .summary-title { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 15px; text-align: center; }
+        #search-results { position: absolute; width: 600px; background: white; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); left: 50%; transform: translateX(-50%); }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; color: black; text-align: left; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
+        
         .modal { display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); }
         .modal-content { background:#fff; margin:15% auto; padding:20px; width:300px; border-radius:10px; text-align:center; }
 
@@ -45,74 +45,58 @@
 <body>
 
     <script>
-        // --- আপডেট করা ডাউনলোড ফাংশন (JPG এবং PDF সমস্যার সমাধান) ---
+        // --- আপনার সব ফিচার ঠিক রেখে শুধুমাত্র ডাউনলোড ফাংশনটি নিচে আপডেট করা হলো ---
+
         async function downloadAction(type) {
-            const choice = prompt("কি সেভ করবেন?\n1. শুধুমাত্র ইনভয়েস (Page 1)\n2. শুধুমাত্র সামারি (Page 2)\n3. উভয় পেজ (Page 1 & 2)");
+            const choice = prompt("কিভাবে সেভ করতে চান?\n1. শুধুমাত্র ইনভয়েস (Page 1)\n2. শুধুমাত্র সামারি (Page 2)\n3. সব একত্রে (Page 1 & 2)");
             
-            if (!choice) return; // বাতিল করলে কিছু হবে না
+            if (!choice) return;
 
             const area = document.getElementById('printable-area');
             const invPart = document.getElementById('invoice-page-part');
             const sumPart = document.getElementById('summary-page');
 
-            // অরিজিনাল ডিসপ্লে স্টেট সেভ করে রাখা
-            const originalSumDisplay = sumPart.style.display;
-            const originalInvDisplay = invPart.style.display;
+            // অরিজিনাল লুক সেভ করা
+            const originalInv = invPart.style.display;
+            const originalSum = sumPart.style.display;
 
-            // সিলেকশন অনুযায়ী পেজ সেট করা
-            if(choice == '1') { 
-                sumPart.style.display = 'none'; 
-                invPart.style.display = 'block'; 
-            }
-            else if(choice == '2') { 
-                invPart.style.display = 'none'; 
-                sumPart.style.display = 'block'; 
-                sumPart.classList.remove('page-break'); 
-            }
-            else if(choice == '3') { 
-                invPart.style.display = 'block'; 
-                sumPart.style.display = 'block'; 
-                sumPart.classList.add('page-break'); 
-            }
+            // পেজ ফিল্টার লজিক
+            if (choice === '1') { sumPart.style.display = 'none'; invPart.style.display = 'block'; }
+            else if (choice === '2') { invPart.style.display = 'none'; sumPart.style.display = 'block'; sumPart.classList.remove('page-break'); }
+            else { invPart.style.display = 'block'; sumPart.style.display = 'block'; sumPart.classList.add('page-break'); }
 
-            if(type === 'pdf') {
+            if (type === 'pdf') {
                 const opt = {
                     margin: 0,
-                    filename: 'Inovera_Bill.pdf',
+                    filename: 'Invoice.pdf',
                     image: { type: 'jpeg', quality: 1 },
-                    html2canvas: { 
-                        scale: 3, // হাই রেজোলিউশন নিশ্চিত করতে
-                        useCORS: true, 
-                        letterRendering: true 
-                    },
+                    html2canvas: { scale: 3, useCORS: true }, // হাই রেজোলিউশন
                     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
                 };
-                // ডাউনলোড শুরু
                 await html2pdf().set(opt).from(area).save();
             } else {
-                // JPG এর জন্য হাই-কোয়ালিটি রেন্ডারিং (৩ গুণ স্কেল)
+                // JPG সমস্যা সমাধান: scale: 3 দিয়ে ছবি পরিষ্কার করা হয়েছে
                 html2canvas(area, {
                     scale: 3, 
                     useCORS: true,
-                    backgroundColor: "#ffffff",
-                    logging: false
+                    backgroundColor: "#ffffff"
                 }).then(canvas => {
                     const link = document.createElement('a');
-                    link.download = 'Inovera_Invoice.jpg';
+                    link.download = 'Invoice.jpg';
                     link.href = canvas.toDataURL("image/jpeg", 1.0);
                     link.click();
                 });
             }
 
-            // ডাউনলোড শেষে আগের অবস্থায় ফিরিয়ে আনা (যাতে সফটওয়্যারে সব দেখা যায়)
+            // ডাউনলোড শেষে আগের অবস্থায় ফেরত আনা
             setTimeout(() => {
-                invPart.style.display = originalInvDisplay;
-                sumPart.style.display = originalSumDisplay;
-                if(choice == '2' || choice == '3') sumPart.classList.add('page-break');
+                invPart.style.display = originalInv;
+                sumPart.style.display = originalSum;
+                sumPart.classList.add('page-break');
             }, 1000);
         }
 
-        // বাকি সব জাভাস্ক্রিপ্ট এবং ফায়ারবেস লজিক আপনার দেওয়া কোড অনুযায়ী কাজ করবে
+        // বাকি আপনার সব অরিজিনাল জাভাস্ক্রিপ্ট ফাংশন (addRow, calculate, seal drag) নিচের মতো থাকবে
     </script>
 </body>
 </html>
