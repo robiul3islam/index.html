@@ -33,16 +33,18 @@
         }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #logo-preview { max-width: 150px; cursor: pointer; }
+        #logo-preview { max-width: 150px; cursor: pointer; min-height: 50px; border: 1px dashed #ccc; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
         th, td { border: 1px solid var(--primary); padding: 6px; font-size: 14px; }
         th { background: var(--bg); }
         input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
         
-        #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 650px; left: 550px; }
-        #seal-img { width: 100%; opacity: 0.8; }
-        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
+        /* সিল এর জন্য নতুন পজিশন - টেবিলের নিচে ডানপাশে */
+        .seal-wrapper { display: flex; justify-content: flex-end; margin-top: 20px; margin-bottom: 20px; }
+        #seal-container { width: 120px; text-align: center; }
+        #seal-img { width: 100%; opacity: 0.8; cursor: pointer; }
 
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
         .footer-info { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--primary); display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
         .footer-row { display: flex; align-items: center; gap: 10px; }
         .footer-icon { width: 22px; height: 22px; object-fit: contain; }
@@ -68,16 +70,17 @@
 
         <div class="controls no-print">
             <button onclick="newBill()" style="background:var(--blue);">+ New Bill</button>
-            <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Logo</button>
-            <button onclick="document.getElementById('seal-input').click()" style="background:#777;">Seal</button>
+            <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Upload Logo</button>
+            <button onclick="document.getElementById('seal-input').click()" style="background:#777;">Upload Seal</button>
             <button onclick="addRow()" style="background:var(--green);">+ Item</button>
             <button onclick="saveInvoice()" id="save-btn" style="background:#3498db;">Save Record</button>
             <button onclick="downloadAction('pdf')" style="background:#9b59b6;">Download PDF</button>
             <button onclick="downloadAction('jpg')" style="background:#e67e22;">Save JPG</button>
             <button onclick="deleteInvoice()" style="background:var(--red);">Delete Bill</button>
             <button onclick="location.reload()" style="background:#7f8c8d;">Logout</button>
-            <input type="file" id="logo-input" accept="image/*" style="display:none">
-            <input type="file" id="seal-input" accept="image/*" style="display:none">
+            
+            <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="previewImage(this, 'logo-preview')">
+            <input type="file" id="seal-input" accept="image/*" style="display:none" onchange="previewImage(this, 'seal-img')">
         </div>
 
         <div id="capture-area">
@@ -87,10 +90,6 @@
                     <img id="logo-preview" src="https://via.placeholder.com/150x50?text=Logo">
                 </div>
                 
-                <div id="seal-container">
-                    <img id="seal-img" src="https://via.placeholder.com/120x120?text=Digital+Seal">
-                </div>
-
                 <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 15px; border-top: 3px solid var(--primary);">
                     <div><strong>Inv No:</strong> <input type="text" id="inv-no" placeholder="Loading..." style="width:120px; font-weight:bold;"></div>
                     <div><strong>Date:</strong> <input type="text" id="inv-date"></div>
@@ -127,30 +126,31 @@
                     <tbody id="tbody"></tbody>
                 </table>
 
-                <div style="margin-left: auto; width: 45%;">
-                    <table>
-                        <tr><td style="border:none; text-align:right;">Sub Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
-                        <tr><td style="border:none; text-align:right;">Advance:</td><td><input type="number" id="advance" value="0" oninput="calculate()"></td></tr>
-                        <tr style="background:var(--bg);"><td style="border:none; text-align:right;"><strong>Due:</strong></td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></tr>
-                    </table>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="width: 50%;">
+                        <p style="margin-bottom: 5px;"><strong>In Words:</strong> <span id="words-area"></span></p>
+                        <p style="color: red; font-weight: bold; font-size: 14px; margin-top: 0;">* Price Excluding VAT and TAX</p>
+                    </div>
+                    <div style="width: 45%;">
+                        <table>
+                            <tr><td style="border:none; text-align:right;">Sub Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
+                            <tr><td style="border:none; text-align:right;">Advance:</td><td><input type="number" id="advance" value="0" oninput="calculate()"></td></tr>
+                            <tr style="background:var(--bg);"><td style="border:none; text-align:right;"><strong>Due:</strong></td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></tr>
+                        </table>
+                    </div>
                 </div>
 
-                <p style="margin-bottom: 5px;"><strong>In Words:</strong> <span id="words-area"></span></p>
-                <p style="color: red; font-weight: bold; font-size: 16px; margin-top: 0;">* Price Excluding VAT and TAX</p>
+                <div class="seal-wrapper">
+                    <div id="seal-container">
+                        <img id="seal-img" src="https://via.placeholder.com/120x120?text=Digital+Seal">
+                        <p style="font-size: 10px; margin-top: 5px; color: #555;">Authorized Seal</p>
+                    </div>
+                </div>
 
                 <div class="footer-info">
-                    <div class="footer-row">
-                        <img src="https://cdn-icons-png.flaticon.com/512/3616/3616215.png" class="footer-icon">
-                        <span>+880 1642 60 98 60</span>
-                    </div>
-                    <div class="footer-row">
-                        <img src="https://cdn-icons-png.flaticon.com/512/2099/2099199.png" class="footer-icon">
-                        <span>inoveracreation@gmail.com</span>
-                    </div>
-                    <div class="footer-row">
-                        <img src="https://cdn-icons-png.flaticon.com/512/12040/12040059.png" class="footer-icon">
-                        <span>Level-7, Resourceful Paltan City Tower, 51/51-A Purana Paltan, Dhaka-1000</span>
-                    </div>
+                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/3616/3616215.png" class="footer-icon"><span>+880 1642 60 98 60</span></div>
+                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/2099/2099199.png" class="footer-icon"><span>inoveracreation@gmail.com</span></div>
+                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/12040/12040059.png" class="footer-icon"><span>Level-7, Resourceful Paltan City Tower, 51/51-A Purana Paltan, Dhaka-1000</span></div>
                 </div>
             </div>
 
@@ -172,7 +172,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD564XNDplN4_1YACVsGSPejchc3XMIB20",
@@ -183,7 +183,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // লগইন ও ইনিশিয়ালাইজেশন
+        // লগইন চেক
         window.checkLogin = async function() {
             const input = document.getElementById('sys-pass').value;
             const snap = await get(child(ref(db), 'settings/passwords'));
@@ -192,17 +192,16 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
                 setTodayDate();
-                autoGenerateInvNo(); // অটো বিল নম্বর জেনারেট
+                autoGenerateInvNo();
             } else { alert("Wrong Password!"); }
         };
 
-        // অটোমেটিক বিল নম্বর জেনারেট করার ফাংশন
+        // অটো বিল নম্বর
         async function autoGenerateInvNo() {
             const snap = await get(child(ref(db), 'invoices/'));
             if (snap.exists()) {
                 const invoices = Object.keys(snap.val());
-                const lastId = invoices[invoices.length - 1]; // সর্বশেষ আইডি
-                // আইডি থেকে নম্বর আলাদা করা (IC-2026-001 -> 001)
+                const lastId = invoices[invoices.length - 1];
                 const lastNum = parseInt(lastId.split('_').pop()) || 0;
                 const nextNum = (lastNum + 1).toString().padStart(3, '0');
                 document.getElementById('inv-no').value = `IC-2026-${nextNum}`;
@@ -211,36 +210,20 @@
             }
         }
 
-        window.newBill = function() {
-            if(confirm("নতুন বিল শুরু করবেন?")) {
-                document.getElementById('c-name').value = "";
-                document.getElementById('c-company').value = "";
-                document.getElementById('c-address').value = "";
-                document.getElementById('c-contact').value = "";
-                document.getElementById('prep-for').value = "";
-                document.getElementById('advance').value = "0";
-                document.getElementById('tbody').innerHTML = "";
-                addRow();
-                setTodayDate();
-                autoGenerateInvNo();
-                calculate();
-                document.getElementById('summary-page').style.display = 'none';
-            }
-        };
-
-        function setTodayDate() {
-            const today = new Date();
-            document.getElementById('inv-date').value = today.getDate().toString().padStart(2, '0') + '/' + 
-                            (today.getMonth() + 1).toString().padStart(2, '0') + '/' + today.getFullYear();
-        }
-
+        // সেভ ইনভয়েস
         window.saveInvoice = function() {
             const originalId = document.getElementById('inv-no').value;
             const dbId = originalId.replace(/\W/g, '_');
             const items = [];
             document.querySelectorAll('#tbody tr').forEach(r => {
-                items.push({ d: r.querySelector('.item-desc').value, q: r.querySelector('.qty').value, p: r.querySelector('.price').value, t: r.querySelector('.row-total').value });
+                items.push({ 
+                    d: r.querySelector('.item-desc').value, 
+                    q: r.querySelector('.qty').value, 
+                    p: r.querySelector('.price').value, 
+                    t: r.querySelector('.row-total').value 
+                });
             });
+
             const data = {
                 invNo: originalId, 
                 name: document.getElementById('c-name').value,
@@ -259,7 +242,26 @@
             set(ref(db, 'invoices/' + dbId), data).then(() => alert("Saved Successfully!"));
         };
 
-        // অন্যান্য ফাংশন আগের মতোই থাকবে...
+        // ডিলিট ইনভয়েস (পাসওয়ার্ড প্রোটেক্টেড)
+        window.deleteInvoice = async function() {
+            const pass = prompt("ডিলিট করার জন্য পাসওয়ার্ড দিন:");
+            const snap = await get(child(ref(db), 'settings/passwords'));
+            const valid = snap.exists() ? snap.val().login : "1234";
+            
+            if(pass === valid) {
+                const id = document.getElementById('inv-no').value.replace(/\W/g, '_');
+                if(confirm("Are you sure you want to delete this bill?")) {
+                    remove(ref(db, 'invoices/' + id)).then(() => { 
+                        alert("Deleted!"); 
+                        location.reload(); 
+                    });
+                }
+            } else {
+                alert("ভুল পাসওয়ার্ড!");
+            }
+        };
+
+        // গ্লোবাল সার্চ এবং লোড ফাংশনগুলো আগের মতোই কাজ করবে...
         window.globalSearch = function() {
             const q = document.getElementById('main-search').value.toLowerCase();
             const res = document.getElementById('search-results');
@@ -282,6 +284,7 @@
             get(child(ref(db), 'invoices/' + id)).then((snap) => {
                 const d = snap.val();
                 document.getElementById('inv-no').value = d.invNo;
+                document.getElementById('inv-date').value = d.date; // সেভ করা ডেট দেখাবে
                 document.getElementById('c-name').value = d.name;
                 document.getElementById('c-company').value = d.company || '';
                 document.getElementById('c-address').value = d.address || '';
@@ -292,39 +295,33 @@
                 const tb = document.getElementById('tbody'); tb.innerHTML = "";
                 d.items.forEach(i => addRow(i.d, i.q, i.p, i.t));
                 document.getElementById('logo-preview').src = d.logo;
-                document.getElementById('seal-img').src = d.seal || '';
+                document.getElementById('seal-img').src = d.seal || 'https://via.placeholder.com/120x120?text=Digital+Seal';
                 document.getElementById('search-results').innerHTML = "";
                 showSummary(d.name);
                 calculate();
             });
         };
-
-        window.showSummary = function(name) {
-            if(!name) { document.getElementById('summary-page').style.display='none'; return; }
-            get(child(ref(db), 'invoices/')).then((snap) => {
-                if(snap.exists()) {
-                    const bills = Object.values(snap.val()).filter(i => i.name.toLowerCase() === name.toLowerCase());
-                    if(bills.length > 0) {
-                        document.getElementById('summary-page').style.display='block';
-                        document.getElementById('sum-client-name').innerText = name;
-                        document.getElementById('sum-tbody').innerHTML = bills.map(i => {
-                            let due = parseFloat(i.total) - parseFloat(i.adv);
-                            return `<tr><td class="no-print"><input type="checkbox" class="sum-checkbox" data-due="${due}" onchange="updateSumTotal()" checked></td><td>${i.invNo}</td><td>${i.date}</td><td>${i.total}</td><td>${i.adv}</td><td style="color:red;">${due.toFixed(2)}</td></tr>`;
-                        }).join('');
-                        updateSumTotal();
-                    } else { document.getElementById('summary-page').style.display='none'; }
-                }
-            });
-        };
-        window.deleteInvoice = function() {
-            const id = document.getElementById('inv-no').value.replace(/\W/g, '_');
-            if(confirm("Are you sure?")) {
-                remove(ref(db, 'invoices/' + id)).then(() => { alert("Deleted!"); location.reload(); });
-            }
-        };
     </script>
 
     <script>
+        // ইমেজ প্রিভিউ ফাংশন (লোগো এবং সিল এর জন্য)
+        function previewImage(input, targetId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(targetId).src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function setTodayDate() {
+            const today = new Date();
+            const dateStr = today.getDate().toString().padStart(2, '0') + '/' + 
+                          (today.getMonth() + 1).toString().padStart(2, '0') + '/' + today.getFullYear();
+            document.getElementById('inv-date').value = dateStr;
+        }
+
         function addRow(d='', q='', p='', t='') {
             const tbody = document.getElementById('tbody');
             const row = tbody.insertRow();
@@ -349,34 +346,22 @@
             document.getElementById('words-area').innerText = numberToWords(Math.floor(total)) + " Taka Only";
         }
 
-        function updateSumTotal() {
-            let total = 0;
-            document.querySelectorAll('.sum-checkbox:checked').forEach(cb => total += parseFloat(cb.getAttribute('data-due')));
-            document.getElementById('total-selected-due').innerText = total.toFixed(2);
-        }
-
-        async function downloadAction(type) {
-            const choice = prompt("1. Invoice Only\n2. Summary Only");
-            const inv = document.getElementById('invoice-page-part');
-            const sum = document.getElementById('summary-page');
-            const billNo = document.getElementById('inv-no').value;
-            const billName = document.getElementById('c-name').value || "Client";
-            let target = (choice == '1') ? inv : (choice == '2' ? sum : null);
-            if(!target) return;
-            if(choice == '1') sum.style.display = 'none'; else inv.style.display = 'none';
-
-            const opt = { margin: 0, filename: `Bill_${billNo}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 3, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-            if(type === 'pdf') await html2pdf().set(opt).from(target).save();
-            else {
-                const canvas = await html2canvas(target, { scale: 3 });
-                const link = document.createElement('a');
-                link.download = `Bill_${billNo}.jpg`;
-                link.href = canvas.toDataURL("image/jpeg", 1.0);
-                link.click();
+        function newBill() {
+            if(confirm("নতুন বিল শুরু করবেন?")) {
+                document.getElementById('c-name').value = "";
+                document.getElementById('c-company').value = "";
+                document.getElementById('c-address').value = "";
+                document.getElementById('c-contact').value = "";
+                document.getElementById('advance').value = "0";
+                document.getElementById('tbody').innerHTML = "";
+                addRow();
+                setTodayDate();
+                // রিফ্রেশ বা অটো জেনারেট ইনভয়েস নম্বর মডিউল স্ক্রিপ্টে আছে
+                location.reload(); 
             }
-            inv.style.display = 'block'; if(document.getElementById('c-name').value) sum.style.display = 'block';
         }
 
+        // নম্বর থেকে কথা (Words) এ রূপান্তর
         function numberToWords(num) {
             const a = ['','one ','two ','three ','four ','five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
             const b = ['', '', 'twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
@@ -388,7 +373,35 @@
             str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
             str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
             str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-            return str;
+            return str.toUpperCase();
+        }
+
+        // ডাউনলোড ফাংশন
+        async function downloadAction(type) {
+            const choice = prompt("1. Invoice Only\n2. Summary Only");
+            const inv = document.getElementById('invoice-page-part');
+            const sum = document.getElementById('summary-page');
+            const billNo = document.getElementById('inv-no').value;
+            
+            let target = (choice == '1') ? inv : (choice == '2' ? sum : null);
+            if(!target) return;
+
+            const opt = { 
+                margin: 0, 
+                filename: `Bill_${billNo}.pdf`, 
+                image: { type: 'jpeg', quality: 1 }, 
+                html2canvas: { scale: 3, useCORS: true }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+            };
+            
+            if(type === 'pdf') await html2pdf().set(opt).from(target).save();
+            else {
+                const canvas = await html2canvas(target, { scale: 3 });
+                const link = document.createElement('a');
+                link.download = `Bill_${billNo}.jpg`;
+                link.href = canvas.toDataURL("image/jpeg", 1.0);
+                link.click();
+            }
         }
 
         window.onload = () => { addRow(); };
