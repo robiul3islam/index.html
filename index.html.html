@@ -39,7 +39,6 @@
         th { background: var(--bg); }
         input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
         
-        /* সিল এর জন্য নতুন পজিশন - টেবিলের নিচে ডানপাশে */
         .seal-wrapper { display: flex; justify-content: flex-end; margin-top: 20px; margin-bottom: 20px; }
         #seal-container { width: 120px; text-align: center; }
         #seal-img { width: 100%; opacity: 0.8; cursor: pointer; }
@@ -48,6 +47,12 @@
         .footer-info { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--primary); display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
         .footer-row { display: flex; align-items: center; gap: 10px; }
         .footer-icon { width: 22px; height: 22px; object-fit: contain; }
+
+        /* "In Words" Bold Style */
+        .words-container { font-weight: bold; }
+
+        #summary-table th { background: #333; color: white; border: 1px solid #444; }
+        #summary-table td { text-align: center; }
 
         @media print { .no-print { display: none !important; } .invoice-container { box-shadow: none; margin: 0; } }
     </style>
@@ -128,7 +133,7 @@
 
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="width: 50%;">
-                        <p style="margin-bottom: 5px;"><strong>In Words:</strong> <span id="words-area"></span></p>
+                        <p class="words-container" style="margin-bottom: 5px;">In Words: <span id="words-area"></span></p>
                         <p style="color: red; font-weight: bold; font-size: 14px; margin-top: 0;">* Price Excluding VAT and TAX</p>
                     </div>
                     <div style="width: 45%;">
@@ -148,24 +153,34 @@
                 </div>
 
                 <div class="footer-info">
-                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/3616/3616215.png" class="footer-icon"><span>+880 1642 60 98 60</span></div>
-                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/2099/2099199.png" class="footer-icon"><span>inoveracreation@gmail.com</span></div>
-                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/12040/12040059.png" class="footer-icon"><span>Level-7, Resourceful Paltan City Tower, 51/51-A Purana Paltan, Dhaka-1000</span></div>
+                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/724/724664.png" class="footer-icon"><span>+880 1642 60 98 60</span></div>
+                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/281/281769.png" class="footer-icon"><span>inoveracreation@gmail.com</span></div>
+                    <div class="footer-row"><img src="https://cdn-icons-png.flaticon.com/512/484/484167.png" class="footer-icon"><span>Level-7, Resourceful Paltan City Tower, 51/51-A Purana Paltan, Dhaka-1000</span></div>
                 </div>
             </div>
 
             <div class="invoice-container" id="summary-page" style="display:none; margin-top:20px;">
-                <h2 style="text-align:center; color:var(--primary);">Statement of Outstanding Balance</h2>
-                <p>Client: <strong id="sum-client-name"></strong></p>
+                <h2 style="text-align:center; color:var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--primary); padding-bottom: 10px;">Statement of Outstanding Balance</h2>
+                <div style="margin-bottom: 15px;">
+                    <p>Client Name: <strong id="sum-client-name" style="font-size: 18px;">---</strong></p>
+                </div>
                 <table id="summary-table">
                     <thead>
-                        <tr><th class="no-print">Select</th><th>Inv No</th><th>Date</th><th>Total</th><th>Paid</th><th>Due</th></tr>
+                        <tr>
+                            <th class="no-print" width="5%">Select</th>
+                            <th width="20%">Inv No</th>
+                            <th width="20%">Date</th>
+                            <th width="20%">Total</th>
+                            <th width="15%">Paid</th>
+                            <th width="20%">Due</th>
+                        </tr>
                     </thead>
                     <tbody id="sum-tbody"></tbody>
                 </table>
-                <div style="text-align: right; font-weight: bold; font-size: 18px; padding: 10px; background: var(--bg); border: 1px solid var(--primary);">
+                <div style="text-align: right; font-weight: bold; font-size: 18px; padding: 15px; background: var(--bg); border: 2px solid var(--primary); margin-top: 10px;">
                     Total Selected Due: <span id="total-selected-due">0.00</span> BDT
                 </div>
+                <p style="font-size: 12px; color: #666; margin-top: 15px;">* This is a computer generated statement and does not require a physical signature.</p>
             </div>
         </div>
     </div>
@@ -183,7 +198,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // লগইন চেক
         window.checkLogin = async function() {
             const input = document.getElementById('sys-pass').value;
             const snap = await get(child(ref(db), 'settings/passwords'));
@@ -196,7 +210,6 @@
             } else { alert("Wrong Password!"); }
         };
 
-        // অটো বিল নম্বর
         async function autoGenerateInvNo() {
             const snap = await get(child(ref(db), 'invoices/'));
             if (snap.exists()) {
@@ -210,7 +223,6 @@
             }
         }
 
-        // সেভ ইনভয়েস
         window.saveInvoice = function() {
             const originalId = document.getElementById('inv-no').value;
             const dbId = originalId.replace(/\W/g, '_');
@@ -239,12 +251,14 @@
                 logo: document.getElementById('logo-preview').src, 
                 seal: document.getElementById('seal-img').src
             };
-            set(ref(db, 'invoices/' + dbId), data).then(() => alert("Saved Successfully!"));
+            set(ref(db, 'invoices/' + dbId), data).then(() => {
+                alert("Saved Successfully!");
+                showSummary(data.name); 
+            });
         };
 
-        // ডিলিট ইনভয়েস (পাসওয়ার্ড প্রোটেক্টেড)
         window.deleteInvoice = async function() {
-            const pass = prompt("ডিলিট করার জন্য পাসওয়ার্ড দিন:");
+            const pass = prompt("ডিলিট করার জন্য পাসওয়ার্ড দিন:");
             const snap = await get(child(ref(db), 'settings/passwords'));
             const valid = snap.exists() ? snap.val().login : "1234";
             
@@ -256,12 +270,9 @@
                         location.reload(); 
                     });
                 }
-            } else {
-                alert("ভুল পাসওয়ার্ড!");
-            }
+            } else { alert("ভুল পাসওয়ার্ড!"); }
         };
 
-        // গ্লোবাল সার্চ এবং লোড ফাংশনগুলো আগের মতোই কাজ করবে...
         window.globalSearch = function() {
             const q = document.getElementById('main-search').value.toLowerCase();
             const res = document.getElementById('search-results');
@@ -284,7 +295,7 @@
             get(child(ref(db), 'invoices/' + id)).then((snap) => {
                 const d = snap.val();
                 document.getElementById('inv-no').value = d.invNo;
-                document.getElementById('inv-date').value = d.date; // সেভ করা ডেট দেখাবে
+                document.getElementById('inv-date').value = d.date;
                 document.getElementById('c-name').value = d.name;
                 document.getElementById('c-company').value = d.company || '';
                 document.getElementById('c-address').value = d.address || '';
@@ -297,20 +308,72 @@
                 document.getElementById('logo-preview').src = d.logo;
                 document.getElementById('seal-img').src = d.seal || 'https://via.placeholder.com/120x120?text=Digital+Seal';
                 document.getElementById('search-results').innerHTML = "";
-                showSummary(d.name);
                 calculate();
+                showSummary(d.name); 
             });
+        };
+
+        window.showSummary = function(clientName) {
+            const sumPage = document.getElementById('summary-page');
+            const sumTbody = document.getElementById('sum-tbody');
+            const sumClientName = document.getElementById('sum-client-name');
+            
+            if(!clientName || clientName.length < 2) {
+                sumPage.style.display = 'none';
+                return;
+            }
+
+            get(child(ref(db), 'invoices/')).then((snap) => {
+                if(snap.exists()) {
+                    let html = "";
+                    let hasData = false;
+                    const allData = snap.val();
+                    
+                    for(let id in allData) {
+                        const inv = allData[id];
+                        if(inv.name.toLowerCase() === clientName.toLowerCase()) {
+                            const total = parseFloat(inv.total) || 0;
+                            const adv = parseFloat(inv.adv) || 0;
+                            const due = total - adv;
+                            
+                            html += `<tr>
+                                <td class="no-print"><input type="checkbox" class="sum-check" data-due="${due}" onchange="calcSumDue()"></td>
+                                <td>${inv.invNo}</td>
+                                <td>${inv.date}</td>
+                                <td>${total.toFixed(2)}</td>
+                                <td>${adv.toFixed(2)}</td>
+                                <td style="color: ${due > 0 ? 'red' : 'green'}; font-weight: bold;">${due.toFixed(2)}</td>
+                            </tr>`;
+                            hasData = true;
+                        }
+                    }
+
+                    if(hasData) {
+                        sumTbody.innerHTML = html;
+                        sumClientName.innerText = clientName;
+                        sumPage.style.display = 'block';
+                        calcSumDue();
+                    } else {
+                        sumPage.style.display = 'none';
+                    }
+                }
+            });
+        };
+
+        window.calcSumDue = function() {
+            let total = 0;
+            document.querySelectorAll('.sum-check:checked').forEach(cb => {
+                total += parseFloat(cb.getAttribute('data-due')) || 0;
+            });
+            document.getElementById('total-selected-due').innerText = total.toFixed(2);
         };
     </script>
 
     <script>
-        // ইমেজ প্রিভিউ ফাংশন (লোগো এবং সিল এর জন্য)
         function previewImage(input, targetId) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById(targetId).src = e.target.result;
-                }
+                reader.onload = (e) => document.getElementById(targetId).src = e.target.result;
                 reader.readAsDataURL(input.files[0]);
             }
         }
@@ -325,7 +388,12 @@
         function addRow(d='', q='', p='', t='') {
             const tbody = document.getElementById('tbody');
             const row = tbody.insertRow();
-            row.innerHTML = `<td align="center">${tbody.rows.length}</td><td><textarea class="item-desc" rows="1">${d}</textarea></td><td><input type="number" class="qty" value="${q}" oninput="updateRow(this)"></td><td><input type="number" class="price" value="${p}" oninput="updateRow(this)"></td><td><input type="number" class="row-total" value="${t}" readonly></td>`;
+            row.innerHTML = `
+                <td align="center">${tbody.rows.length}</td>
+                <td><textarea class="item-desc" rows="1">${d}</textarea></td>
+                <td><input type="number" class="qty" value="${q}" oninput="updateRow(this)"></td>
+                <td><input type="number" class="price" value="${p}" oninput="updateRow(this)"></td>
+                <td><input type="number" class="row-total" value="${t}" readonly></td>`;
             calculate();
         }
 
@@ -347,21 +415,9 @@
         }
 
         function newBill() {
-            if(confirm("নতুন বিল শুরু করবেন?")) {
-                document.getElementById('c-name').value = "";
-                document.getElementById('c-company').value = "";
-                document.getElementById('c-address').value = "";
-                document.getElementById('c-contact').value = "";
-                document.getElementById('advance').value = "0";
-                document.getElementById('tbody').innerHTML = "";
-                addRow();
-                setTodayDate();
-                // রিফ্রেশ বা অটো জেনারেট ইনভয়েস নম্বর মডিউল স্ক্রিপ্টে আছে
-                location.reload(); 
-            }
+            if(confirm("নতুন বিল শুরু করবেন?")) { location.reload(); }
         }
 
-        // নম্বর থেকে কথা (Words) এ রূপান্তর
         function numberToWords(num) {
             const a = ['','one ','two ','three ','four ','five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
             const b = ['', '', 'twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
@@ -376,9 +432,8 @@
             return str.toUpperCase();
         }
 
-        // ডাউনলোড ফাংশন
         async function downloadAction(type) {
-            const choice = prompt("1. Invoice Only\n2. Summary Only");
+            const choice = prompt("কি ডাউনলোড করতে চান?\n1. Invoice Only\n2. Summary Only");
             const inv = document.getElementById('invoice-page-part');
             const sum = document.getElementById('summary-page');
             const billNo = document.getElementById('inv-no').value;
@@ -388,7 +443,7 @@
 
             const opt = { 
                 margin: 0, 
-                filename: `Bill_${billNo}.pdf`, 
+                filename: choice == '1' ? `Invoice_${billNo}.pdf` : `Summary_${document.getElementById('c-name').value}.pdf`, 
                 image: { type: 'jpeg', quality: 1 }, 
                 html2canvas: { scale: 3, useCORS: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
@@ -398,7 +453,7 @@
             else {
                 const canvas = await html2canvas(target, { scale: 3 });
                 const link = document.createElement('a');
-                link.download = `Bill_${billNo}.jpg`;
+                link.download = choice == '1' ? `Invoice_${billNo}.jpg` : `Summary.jpg`;
                 link.href = canvas.toDataURL("image/jpeg", 1.0);
                 link.click();
             }
