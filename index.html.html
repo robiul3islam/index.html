@@ -6,7 +6,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { --primary: #f28c28; --bg: #fffbf5; --red: #d32f2f; --green: #27ae60; }
+        :root { --primary: #f28c28; --bg: #fffbf5; --red: #d32f2f; --green: #27ae60; --blue: #3498db; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #e0e0e0; padding: 20px; margin: 0; }
         
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #222; color: white; display: flex; justify-content: center; align-items: center; z-index: 9999; }
@@ -19,28 +19,33 @@
 
         .controls { max-width: 850px; margin: 0 auto 20px; background: white; padding: 15px; border-radius: 8px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         
-        /* A4 সাইজ কন্টেইনার */
         .invoice-container { 
             width: 210mm; 
             min-height: 297mm; 
             margin: auto; 
             background: white; 
-            padding: 20mm; 
+            padding: 15mm; 
             position: relative; 
             box-sizing: border-box; 
             box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
         }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         #logo-preview { max-width: 150px; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th, td { border: 1px solid var(--primary); padding: 8px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th, td { border: 1px solid var(--primary); padding: 6px; font-size: 14px; }
         th { background: var(--bg); }
         input, textarea, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; }
         
-        #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 800px; left: 600px; }
+        #seal-container { position: absolute; width: 120px; cursor: move; z-index: 100; top: 650px; left: 550px; }
         #seal-img { width: 100%; opacity: 0.8; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; }
+
+        .footer-info { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--primary); display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+        .footer-row { display: flex; align-items: center; gap: 10px; }
+        .footer-icon { width: 22px; height: 22px; object-fit: contain; }
 
         @media print { .no-print { display: none !important; } .invoice-container { box-shadow: none; margin: 0; } }
     </style>
@@ -50,7 +55,7 @@
     <div id="login-screen">
         <div class="login-box">
             <h2 style="color:var(--primary)">System Access</h2>
-            <input type="password" id="sys-pass" placeholder="পাসওয়ার্ড দিন" style="padding:10px; margin-bottom:10px; text-align:center;"> <br>
+            <input type="password" id="sys-pass" placeholder="পাসওয়ার্ড দিন" style="padding:10px; margin-bottom:10px; text-align:center;"> <br>
             <button onclick="checkLogin()" style="background: var(--primary); width:100%;">Login</button>
         </div>
     </div>
@@ -62,6 +67,7 @@
         </div>
 
         <div class="controls no-print">
+            <button onclick="newBill()" style="background:var(--blue);">+ New Bill</button>
             <button onclick="document.getElementById('logo-input').click()" style="background:#555;">Logo</button>
             <button onclick="document.getElementById('seal-input').click()" style="background:#777;">Seal</button>
             <button onclick="addRow()" style="background:var(--green);">+ Item</button>
@@ -77,36 +83,50 @@
         <div id="capture-area">
             <div class="invoice-container" id="invoice-page-part">
                 <div class="header">
-                    <h1 style="font-size: 40px; margin:0;">INVOICE</h1>
+                    <h1 style="font-size: 40px; margin:0; color: #333;">INVOICE</h1>
                     <img id="logo-preview" src="https://via.placeholder.com/150x50?text=Logo">
                 </div>
+                
                 <div id="seal-container">
                     <img id="seal-img" src="https://via.placeholder.com/120x120?text=Digital+Seal">
                 </div>
-                <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 20px; border-top: 3px solid var(--primary);">
-                    <div><strong>Inv No:</strong> <input type="text" id="inv-no" value="IC-2026-001" style="width:100px;"></div>
+
+                <div style="display: flex; justify-content: space-between; background: var(--bg); padding: 10px; margin-bottom: 15px; border-top: 3px solid var(--primary);">
+                    <div><strong>Inv No:</strong> <input type="text" id="inv-no" placeholder="Loading..." style="width:120px; font-weight:bold;"></div>
                     <div><strong>Date:</strong> <input type="text" id="inv-date"></div>
                 </div>
+
                 <table>
                     <tr>
-                        <td width="15%"><strong>Company:</strong></td>
-                        <td width="45%"><input type="text" id="c-company" placeholder="Client's Company"></td>
-                        <td width="15%" align="center"><strong>Prep. by:</strong></td>
-                        <td width="25%"><input type="text" id="prep-by" value="Inovera Creation" style="text-align:center; font-weight:bold;"></td>
+                        <td width="12%"><strong>Company:</strong></td>
+                        <td width="58%"><input type="text" id="c-company" placeholder="Client's Company"></td>
+                        <td width="10%" align="center"><strong>Prep. by:</strong></td>
+                        <td width="20%"><input type="text" id="prep-by" value="Inovera Creation" style="text-align:center; font-weight:bold; font-size:12px;"></td>
                     </tr>
                     <tr>
                         <td><strong>Name:</strong></td>
-                        <td><input type="text" id="c-name" placeholder="Client Name" oninput="showSummary(this.value)"></td>
-                        <td align="center"><strong>Contact:</strong></td>
+                        <td><input type="text" id="c-name" placeholder="Client Name" oninput="showSummary(this.value)" style="font-weight:bold;"></td>
+                        <td align="center"><strong>Prep. for:</strong></td>
+                        <td><input type="text" id="prep-for" placeholder="Target Person/Dept" style="text-align:center; font-size:12px;"></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Address:</strong></td>
+                        <td><input type="text" id="c-address" placeholder="Client Address"></td>
+                        <td colspan="2" rowspan="2" style="background:#f9f9f9; text-align:center; vertical-align:middle; color:#888; font-size:10px;">AUTHORIZED SIGNATURE</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Contact:</strong></td>
                         <td><input type="text" id="c-contact" placeholder="Phone Number"></td>
                     </tr>
                 </table>
+
                 <table id="item-table">
                     <thead>
                         <tr><th width="5%">SL</th><th width="55%">Description</th><th width="10%">Qty</th><th width="15%">Price</th><th width="15%">Total</th></tr>
                     </thead>
                     <tbody id="tbody"></tbody>
                 </table>
+
                 <div style="margin-left: auto; width: 45%;">
                     <table>
                         <tr><td style="border:none; text-align:right;">Sub Total:</td><td><input type="number" id="sub-total" readonly></td></tr>
@@ -114,7 +134,24 @@
                         <tr style="background:var(--bg);"><td style="border:none; text-align:right;"><strong>Due:</strong></td><td><input type="number" id="due" readonly style="font-weight:bold;"></td></tr>
                     </table>
                 </div>
-                <p><strong>In Words:</strong> <span id="words-area"></span></p>
+
+                <p style="margin-bottom: 5px;"><strong>In Words:</strong> <span id="words-area"></span></p>
+                <p style="color: red; font-weight: bold; font-size: 16px; margin-top: 0;">* Price Excluding VAT and TAX</p>
+
+                <div class="footer-info">
+                    <div class="footer-row">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3616/3616215.png" class="footer-icon">
+                        <span>+880 1642 60 98 60</span>
+                    </div>
+                    <div class="footer-row">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2099/2099199.png" class="footer-icon">
+                        <span>inoveracreation@gmail.com</span>
+                    </div>
+                    <div class="footer-row">
+                        <img src="https://cdn-icons-png.flaticon.com/512/12040/12040059.png" class="footer-icon">
+                        <span>Level-7, Resourceful Paltan City Tower, 51/51-A Purana Paltan, Dhaka-1000</span>
+                    </div>
+                </div>
             </div>
 
             <div class="invoice-container" id="summary-page" style="display:none; margin-top:20px;">
@@ -135,7 +172,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD564XNDplN4_1YACVsGSPejchc3XMIB20",
@@ -146,6 +183,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // লগইন ও ইনিশিয়ালাইজেশন
         window.checkLogin = async function() {
             const input = document.getElementById('sys-pass').value;
             const snap = await get(child(ref(db), 'settings/passwords'));
@@ -153,24 +191,75 @@
             if(input === valid) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
+                setTodayDate();
+                autoGenerateInvNo(); // অটো বিল নম্বর জেনারেট
             } else { alert("Wrong Password!"); }
         };
 
+        // অটোমেটিক বিল নম্বর জেনারেট করার ফাংশন
+        async function autoGenerateInvNo() {
+            const snap = await get(child(ref(db), 'invoices/'));
+            if (snap.exists()) {
+                const invoices = Object.keys(snap.val());
+                const lastId = invoices[invoices.length - 1]; // সর্বশেষ আইডি
+                // আইডি থেকে নম্বর আলাদা করা (IC-2026-001 -> 001)
+                const lastNum = parseInt(lastId.split('_').pop()) || 0;
+                const nextNum = (lastNum + 1).toString().padStart(3, '0');
+                document.getElementById('inv-no').value = `IC-2026-${nextNum}`;
+            } else {
+                document.getElementById('inv-no').value = "IC-2026-001";
+            }
+        }
+
+        window.newBill = function() {
+            if(confirm("নতুন বিল শুরু করবেন?")) {
+                document.getElementById('c-name').value = "";
+                document.getElementById('c-company').value = "";
+                document.getElementById('c-address').value = "";
+                document.getElementById('c-contact').value = "";
+                document.getElementById('prep-for').value = "";
+                document.getElementById('advance').value = "0";
+                document.getElementById('tbody').innerHTML = "";
+                addRow();
+                setTodayDate();
+                autoGenerateInvNo();
+                calculate();
+                document.getElementById('summary-page').style.display = 'none';
+            }
+        };
+
+        function setTodayDate() {
+            const today = new Date();
+            document.getElementById('inv-date').value = today.getDate().toString().padStart(2, '0') + '/' + 
+                            (today.getMonth() + 1).toString().padStart(2, '0') + '/' + today.getFullYear();
+        }
+
         window.saveInvoice = function() {
-            const id = document.getElementById('inv-no').value.replace(/\W/g, '_');
+            const originalId = document.getElementById('inv-no').value;
+            const dbId = originalId.replace(/\W/g, '_');
             const items = [];
             document.querySelectorAll('#tbody tr').forEach(r => {
                 items.push({ d: r.querySelector('.item-desc').value, q: r.querySelector('.qty').value, p: r.querySelector('.price').value, t: r.querySelector('.row-total').value });
             });
             const data = {
-                invNo: document.getElementById('inv-no').value, name: document.getElementById('c-name').value,
-                total: document.getElementById('sub-total').value, adv: document.getElementById('advance').value,
-                date: document.getElementById('inv-date').value, items: items, 
-                logo: document.getElementById('logo-preview').src, seal: document.getElementById('seal-img').src
+                invNo: originalId, 
+                name: document.getElementById('c-name').value,
+                company: document.getElementById('c-company').value,
+                address: document.getElementById('c-address').value,
+                contact: document.getElementById('c-contact').value,
+                prepBy: document.getElementById('prep-by').value,
+                prepFor: document.getElementById('prep-for').value,
+                total: document.getElementById('sub-total').value, 
+                adv: document.getElementById('advance').value,
+                date: document.getElementById('inv-date').value, 
+                items: items, 
+                logo: document.getElementById('logo-preview').src, 
+                seal: document.getElementById('seal-img').src
             };
-            set(ref(db, 'invoices/' + id), data).then(() => alert("Saved!"));
+            set(ref(db, 'invoices/' + dbId), data).then(() => alert("Saved Successfully!"));
         };
 
+        // অন্যান্য ফাংশন আগের মতোই থাকবে...
         window.globalSearch = function() {
             const q = document.getElementById('main-search').value.toLowerCase();
             const res = document.getElementById('search-results');
@@ -194,6 +283,11 @@
                 const d = snap.val();
                 document.getElementById('inv-no').value = d.invNo;
                 document.getElementById('c-name').value = d.name;
+                document.getElementById('c-company').value = d.company || '';
+                document.getElementById('c-address').value = d.address || '';
+                document.getElementById('c-contact').value = d.contact || '';
+                document.getElementById('prep-by').value = d.prepBy || 'Inovera Creation';
+                document.getElementById('prep-for').value = d.prepFor || '';
                 document.getElementById('advance').value = d.adv;
                 const tb = document.getElementById('tbody'); tb.innerHTML = "";
                 d.items.forEach(i => addRow(i.d, i.q, i.p, i.t));
@@ -201,6 +295,7 @@
                 document.getElementById('seal-img').src = d.seal || '';
                 document.getElementById('search-results').innerHTML = "";
                 showSummary(d.name);
+                calculate();
             });
         };
 
@@ -221,11 +316,15 @@
                 }
             });
         };
+        window.deleteInvoice = function() {
+            const id = document.getElementById('inv-no').value.replace(/\W/g, '_');
+            if(confirm("Are you sure?")) {
+                remove(ref(db, 'invoices/' + id)).then(() => { alert("Deleted!"); location.reload(); });
+            }
+        };
     </script>
 
     <script>
-        document.getElementById('inv-date').value = new Date().toLocaleDateString('en-GB');
-
         function addRow(d='', q='', p='', t='') {
             const tbody = document.getElementById('tbody');
             const row = tbody.insertRow();
@@ -256,60 +355,27 @@
             document.getElementById('total-selected-due').innerText = total.toFixed(2);
         }
 
-        // এ৪ সাইজ এবং সঠিক পেজ ডাউনলোড লজিক (উন্নত কোয়ালিটি)
         async function downloadAction(type) {
-            const choice = prompt("কি ডাউনলোড করবেন?\n1. শুধু ইনভয়েস (Invoice Only)\n2. শুধু সামারি (Summary Only)");
+            const choice = prompt("1. Invoice Only\n2. Summary Only");
             const inv = document.getElementById('invoice-page-part');
             const sum = document.getElementById('summary-page');
+            const billNo = document.getElementById('inv-no').value;
+            const billName = document.getElementById('c-name').value || "Client";
+            let target = (choice == '1') ? inv : (choice == '2' ? sum : null);
+            if(!target) return;
+            if(choice == '1') sum.style.display = 'none'; else inv.style.display = 'none';
 
-            let target;
-            if(choice == '1') {
-                target = inv;
-                sum.style.display = 'none';
-            } else if(choice == '2') {
-                target = sum;
-                inv.style.display = 'none';
-                sum.style.display = 'block';
-            } else return;
-
-            const opt = {
-                margin: 0,
-                filename: 'Bill_A4.pdf',
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            if(type === 'pdf') {
-                await html2pdf().set(opt).from(target).save();
-            } else {
-                const canvas = await html2canvas(target, { scale: 3, backgroundColor: '#ffffff' });
+            const opt = { margin: 0, filename: `Bill_${billNo}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 3, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            if(type === 'pdf') await html2pdf().set(opt).from(target).save();
+            else {
+                const canvas = await html2canvas(target, { scale: 3 });
                 const link = document.createElement('a');
-                link.download = 'Bill_Image.jpg';
+                link.download = `Bill_${billNo}.jpg`;
                 link.href = canvas.toDataURL("image/jpeg", 1.0);
                 link.click();
             }
-
-            // ডাউনলোড শেষে আগের অবস্থায় ফেরা
-            inv.style.display = 'block';
-            if(document.getElementById('c-name').value) sum.style.display = 'block';
+            inv.style.display = 'block'; if(document.getElementById('c-name').value) sum.style.display = 'block';
         }
-
-        // সিল ড্র্যাগিং
-        const seal = document.getElementById("seal-container");
-        let isDragging = false;
-        seal.onmousedown = () => isDragging = true;
-        document.onmousemove = (e) => { if(isDragging) { seal.style.left = (e.pageX - 60) + "px"; seal.style.top = (e.pageY - 60) + "px"; } };
-        document.onmouseup = () => isDragging = false;
-
-        document.getElementById('logo-input').onchange = (e) => {
-            const r = new FileReader(); r.onload = () => document.getElementById('logo-preview').src = r.result;
-            r.readAsDataURL(e.target.files[0]);
-        };
-        document.getElementById('seal-input').onchange = (e) => {
-            const r = new FileReader(); r.onload = () => document.getElementById('seal-img').src = r.result;
-            r.readAsDataURL(e.target.files[0]);
-        };
 
         function numberToWords(num) {
             const a = ['','one ','two ','three ','four ','five ','six ','seven ','eight ','nine ','ten ','eleven ','twelve ','thirteen ','fourteen ','fifteen ','sixteen ','seventeen ','eighteen ','nineteen '];
@@ -325,7 +391,7 @@
             return str;
         }
 
-        window.onload = () => addRow();
+        window.onload = () => { addRow(); };
     </script>
 </body>
 </html>
